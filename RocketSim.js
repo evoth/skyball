@@ -56,7 +56,7 @@ Module['ready'] = new Promise((resolve, reject) => {
         // web worker
         PACKAGE_PATH = encodeURIComponent(location.pathname.toString().substring(0, location.pathname.toString().lastIndexOf('/')) + '/');
       }
-      var PACKAGE_NAME = 'src/RocketSim.data';
+      var PACKAGE_NAME = 'RocketSim.data';
       var REMOTE_PACKAGE_BASE = 'RocketSim.data';
       if (typeof Module['locateFilePackage'] === 'function' && !Module['locateFile']) {
         Module['locateFile'] = Module['locateFilePackage'];
@@ -146,6 +146,7 @@ var REMOTE_PACKAGE_SIZE = metadata['remote_package_size'];
       }
 Module['FS_createPath']("/", "collision_meshes", true, true);
 Module['FS_createPath']("/collision_meshes", "soccar", true, true);
+Module['FS_createPath']("/", "models", true, true);
 
       /** @constructor */
       function DataRequest(start, end, audio) {
@@ -189,10 +190,10 @@ Module['FS_createPath']("/collision_meshes", "soccar", true, true);
           var files = metadata['files'];
           for (var i = 0; i < files.length; ++i) {
             DataRequest.prototype.requests[files[i].filename].onload();
-          }          Module['removeRunDependency']('datafile_src/RocketSim.data');
+          }          Module['removeRunDependency']('datafile_RocketSim.data');
 
       };
-      Module['addRunDependency']('datafile_src/RocketSim.data');
+      Module['addRunDependency']('datafile_RocketSim.data');
 
       if (!Module.preloadResults) Module.preloadResults = {};
 
@@ -213,7 +214,7 @@ Module['FS_createPath']("/collision_meshes", "soccar", true, true);
     }
 
     }
-    loadPackage({"files": [{"filename": "/collision_meshes/soccar/mesh_0.cmf", "start": 0, "end": 16364}, {"filename": "/collision_meshes/soccar/mesh_1.cmf", "start": 16364, "end": 32728}, {"filename": "/collision_meshes/soccar/mesh_10.cmf", "start": 32728, "end": 35208}, {"filename": "/collision_meshes/soccar/mesh_11.cmf", "start": 35208, "end": 37688}, {"filename": "/collision_meshes/soccar/mesh_12.cmf", "start": 37688, "end": 40168}, {"filename": "/collision_meshes/soccar/mesh_13.cmf", "start": 40168, "end": 42648}, {"filename": "/collision_meshes/soccar/mesh_14.cmf", "start": 42648, "end": 43064}, {"filename": "/collision_meshes/soccar/mesh_15.cmf", "start": 43064, "end": 43480}, {"filename": "/collision_meshes/soccar/mesh_2.cmf", "start": 43480, "end": 59844}, {"filename": "/collision_meshes/soccar/mesh_3.cmf", "start": 59844, "end": 76208}, {"filename": "/collision_meshes/soccar/mesh_4.cmf", "start": 76208, "end": 94444}, {"filename": "/collision_meshes/soccar/mesh_5.cmf", "start": 94444, "end": 112680}, {"filename": "/collision_meshes/soccar/mesh_6.cmf", "start": 112680, "end": 130916}, {"filename": "/collision_meshes/soccar/mesh_7.cmf", "start": 130916, "end": 149152}, {"filename": "/collision_meshes/soccar/mesh_8.cmf", "start": 149152, "end": 149568}, {"filename": "/collision_meshes/soccar/mesh_9.cmf", "start": 149568, "end": 149984}], "remote_package_size": 149984});
+    loadPackage({"files": [{"filename": "/collision_meshes/soccar/mesh_0.cmf", "start": 0, "end": 16364}, {"filename": "/collision_meshes/soccar/mesh_1.cmf", "start": 16364, "end": 32728}, {"filename": "/collision_meshes/soccar/mesh_10.cmf", "start": 32728, "end": 35208}, {"filename": "/collision_meshes/soccar/mesh_11.cmf", "start": 35208, "end": 37688}, {"filename": "/collision_meshes/soccar/mesh_12.cmf", "start": 37688, "end": 40168}, {"filename": "/collision_meshes/soccar/mesh_13.cmf", "start": 40168, "end": 42648}, {"filename": "/collision_meshes/soccar/mesh_14.cmf", "start": 42648, "end": 43064}, {"filename": "/collision_meshes/soccar/mesh_15.cmf", "start": 43064, "end": 43480}, {"filename": "/collision_meshes/soccar/mesh_2.cmf", "start": 43480, "end": 59844}, {"filename": "/collision_meshes/soccar/mesh_3.cmf", "start": 59844, "end": 76208}, {"filename": "/collision_meshes/soccar/mesh_4.cmf", "start": 76208, "end": 94444}, {"filename": "/collision_meshes/soccar/mesh_5.cmf", "start": 94444, "end": 112680}, {"filename": "/collision_meshes/soccar/mesh_6.cmf", "start": 112680, "end": 130916}, {"filename": "/collision_meshes/soccar/mesh_7.cmf", "start": 130916, "end": 149152}, {"filename": "/collision_meshes/soccar/mesh_8.cmf", "start": 149152, "end": 149568}, {"filename": "/collision_meshes/soccar/mesh_9.cmf", "start": 149568, "end": 149984}, {"filename": "/models/ball.glb", "start": 149984, "end": 302348}, {"filename": "/models/field.glb", "start": 302348, "end": 4665500}], "remote_package_size": 4665500});
 
   })();
 

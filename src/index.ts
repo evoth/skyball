@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 import Controls, { Axis, Button, Input, Key } from "./controls";
-import Graphics, { Box, Sphere } from "./graphics";
+import Graphics, { Box, Cylinder, Model, Sphere } from "./graphics";
 
 import Camera from "./camera";
 import factory from "../RocketSim.js";
@@ -14,17 +14,37 @@ const game = new RocketSim.Game(
 );
 const graphics = new Graphics();
 
-const carShape: Box = new Box(
-  new THREE.Vector3(...game.GetCarConfig().hitboxSize)
+const arenaModel = new Model(
+  graphics.scene,
+  "assets/models/field.glb",
+  function (mesh) {
+    mesh.rotateY(Math.PI / 2);
+  }
 );
-const carOffset = new THREE.Vector3(...game.GetCarConfig().hitboxPosOffset);
-const ballShape: Sphere = new Sphere(RocketSim.BALL_COLLISION_RADIUS_NORMAL);
-graphics.addShape(carShape);
-graphics.addShape(ballShape);
+
+const carConfig = game.GetCarConfig();
+
+// const carShape = new Box(
+//   graphics.scene,
+//   new THREE.Vector3(...carConfig.hitboxSize)
+// );
+const carModel = new Model(graphics.scene, "assets/models/car.glb");
+const carOffset = new THREE.Vector3(...carConfig.hitboxPosOffset);
+
+const wheelShapes: Cylinder[] = [];
+for (let i = 0; i < 4; i++) {
+  const radius =
+    i < 2
+      ? carConfig.frontWheels.wheelRadius
+      : carConfig.backWheels.wheelRadius;
+  wheelShapes.push(new Cylinder(graphics.scene, radius, 10));
+}
+
+const ballModel = new Model(graphics.scene, "assets/models/ball.glb");
 
 let gameControls = game.GetControls();
 
-const camera = new Camera(350, 110, 100);
+const camera = new Camera(350, 110, -4, 100);
 
 const controls = new Controls(
   {
@@ -98,12 +118,26 @@ function animate() {
   }
   game.SetControls(gameControls);
   game.Step(2);
-  let state = game.GetState();
-  carShape.update(
-    new THREE.Vector3(...state.carPos).add(carOffset),
-    new THREE.Vector3(...state.carAng)
+  const state = game.GetState();
+  carModel.update(
+    new THREE.Vector3(...state.carPos),
+    new THREE.Vector3(...state.carAng),
+    carOffset
   );
-  ballShape.update(new THREE.Vector3(...state.ballPos));
+  for (let i = 0; i < 4; i++) {
+    wheelShapes[i].update(
+      new THREE.Vector3(...state.wheelPos[i]),
+      new THREE.Vector3(
+        state.wheelAng[i][0] + Math.PI / 2,
+        state.wheelAng[i][1],
+        state.wheelAng[i][2]
+      )
+    );
+  }
+  ballModel.update(
+    new THREE.Vector3(...state.ballPos),
+    new THREE.Vector3(...state.ballAng)
+  );
   camera.updateCamera(graphics, state);
   graphics.render();
   requestAnimationFrame(animate);

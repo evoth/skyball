@@ -1,11 +1,12 @@
 import * as THREE from "three";
 
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 export class Shape {
-  mesh: THREE.Mesh;
+  mesh: THREE.Object3D;
   scene: THREE.Scene;
+
   static materialBall = new THREE.MeshPhongMaterial({
     color: 0xfca400,
     wireframe: true,
@@ -14,30 +15,76 @@ export class Shape {
     color: 0xfca400,
   });
 
-  update(pos: THREE.Vector3, ang: THREE.Vector3 = new THREE.Vector3()) {
-    this.mesh.position.copy(pos);
-    this.mesh.setRotationFromEuler(
-      new THREE.Euler(ang.x, -ang.y, ang.z, "YZX")
-    );
+  update(
+    pos: THREE.Vector3,
+    ang: THREE.Vector3 = new THREE.Vector3(),
+    offset: THREE.Vector3 = new THREE.Vector3()
+  ) {
+    if (!this.mesh) return;
+    const rotation = new THREE.Euler(ang.x, -ang.y, ang.z, "YZX");
+    const position = new THREE.Vector3();
+    position.copy(offset);
+    position.applyEuler(rotation);
+    position.add(pos);
+    this.mesh.position.copy(position);
+    this.mesh.setRotationFromEuler(rotation);
   }
 }
 
 export class Box extends Shape {
   constructor(
+    scene: THREE.Scene,
     size: THREE.Vector3,
     material: THREE.Material = Shape.materialCar
   ) {
     super();
     const shape = new THREE.BoxGeometry(size.x, size.y, size.z, 1, 1, 1);
     this.mesh = new THREE.Mesh(shape, material);
+    scene.add(this.mesh);
   }
 }
 
 export class Sphere extends Shape {
-  constructor(radius: number, material: THREE.Material = Shape.materialBall) {
+  constructor(
+    scene: THREE.Scene,
+    radius: number,
+    material: THREE.Material = Shape.materialBall
+  ) {
     super();
     const shape = new THREE.SphereGeometry(radius);
     this.mesh = new THREE.Mesh(shape, material);
+    scene.add(this.mesh);
+  }
+}
+
+export class Cylinder extends Shape {
+  constructor(
+    scene: THREE.Scene,
+    radius: number,
+    height: number,
+    material: THREE.Material = Shape.materialCar
+  ) {
+    super();
+    const shape = new THREE.CylinderGeometry(radius, radius, height);
+    this.mesh = new THREE.Mesh(shape, material);
+    scene.add(this.mesh);
+  }
+}
+
+export class Model extends Shape {
+  constructor(
+    scene: THREE.Scene,
+    path: string,
+    onLoad?: (mesh: THREE.Object3D) => void
+  ) {
+    super();
+    const that = this;
+    const loader = new GLTFLoader();
+    loader.load(path, function (gltf) {
+      that.mesh = gltf.scene;
+      scene.add(that.mesh);
+      onLoad?.(that.mesh);
+    });
   }
 }
 
@@ -49,7 +96,6 @@ export default class Graphics {
 
   constructor() {
     this.initScene();
-    this.loadArena();
   }
 
   initScene() {
@@ -58,7 +104,7 @@ export default class Graphics {
     this.scene = new THREE.Scene();
 
     this.camera = new THREE.PerspectiveCamera(
-      60,
+      70,
       window.innerWidth / window.innerHeight,
       0.2,
       100000
@@ -90,45 +136,6 @@ export default class Graphics {
 
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });
-  }
-
-  loadArena() {
-    const materialWall = new THREE.MeshStandardMaterial({
-      color: 0x6fe396,
-      wireframe: true,
-    });
-
-    // instantiate a loader
-    const loader = new OBJLoader();
-    const that = this;
-    // load a resource
-    loader.load(
-      // resource URL
-      "pitch.obj",
-      // called when resource is loaded
-      function (object) {
-        object.rotateX(-Math.PI / 2);
-        object.rotateZ(Math.PI / 2);
-        object.traverse(function (child) {
-          if (child instanceof THREE.Mesh) {
-            child.material = materialWall;
-          }
-        });
-        that.scene.add(object);
-      },
-      // called when loading is in progresses
-      function (xhr) {
-        console.log("Loading collision mesh model...");
-      },
-      // called when loading has errors
-      function (error) {
-        console.log("An error happened", error.message);
-      }
-    );
-  }
-
-  addShape(shape: Shape) {
-    this.scene.add(shape.mesh);
   }
 
   render() {

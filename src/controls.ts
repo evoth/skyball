@@ -119,9 +119,10 @@ export default class Controls {
       getKeyboardValue(this.keyboardControls.roll) +
         getGamepadValue(this.gamepadControls.roll)
     );
-    roll += roll2 * yaw;
-    roll = Math.max(-1, Math.min(1, roll));
-    yaw *= 1 - roll2;
+    if (roll2 != 0) {
+      roll = roll2 * yaw;
+      yaw *= 1 - roll2;
+    }
 
     const boost = Boolean(
       combinedValue(
