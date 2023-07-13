@@ -1,5 +1,5 @@
 # Skyball
-A fan-made Rocket League clone which runs in the web browser.
+A fan-made [Rocket League](https://en.wikipedia.org/wiki/Rocket_League) clone which runs in the web browser.
 
 ## Current state
 Little more than mostly accurate Rocket-League-esque physics with some test graphics and controls slapped on top.
