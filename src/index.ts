@@ -4,6 +4,7 @@ import Controls, { Axis, Button, Input, Key } from "./controls";
 import Graphics, { Box, Cylinder, Model, Sphere } from "./graphics";
 
 import Camera from "./camera";
+import Socket from "./socket";
 import factory from "../RocketSim.js";
 
 const RocketSim = await factory();
@@ -13,6 +14,7 @@ const game = new RocketSim.Game(
   RocketSim.CarConfigPreset.OCTANE
 );
 const graphics = new Graphics();
+const socket = new Socket();
 
 const arenaModel = new Model(
   graphics.scene,
@@ -113,32 +115,66 @@ function animate() {
       camera.ballcam = !camera.ballcam;
     }
     if (controls.state.reset.value && controls.state.reset.changed) {
-      game.ResetToKickoff();
+      socket.toggle_connect();
     }
   }
-  game.SetControls(gameControls);
-  game.Step(2);
-  const state = game.GetState();
-  carModel.update(
-    new THREE.Vector3(...state.carPos),
-    new THREE.Vector3(...state.carAng),
-    carOffset
-  );
-  for (let i = 0; i < 4; i++) {
-    wheelShapes[i].update(
-      new THREE.Vector3(...state.wheelPos[i]),
+  if (socket.isConnected && socket.data) {
+    let data = socket.data.data[0];
+    carModel.update(
+      new THREE.Vector3(data.car.loc[0], data.car.loc[2], data.car.loc[1]),
       new THREE.Vector3(
-        state.wheelAng[i][0] + Math.PI / 2,
-        state.wheelAng[i][1],
-        state.wheelAng[i][2]
+        (data.car.rot[2] / 32768) * Math.PI,
+        (data.car.rot[1] / 32768) * Math.PI,
+        (data.car.rot[0] / 32768) * Math.PI
+      ),
+      carOffset
+    );
+    ballModel.update(
+      new THREE.Vector3(data.ball.loc[0], data.ball.loc[2], data.ball.loc[1]),
+      new THREE.Vector3(
+        (data.ball.rot[2] / 32768) * Math.PI,
+        (data.ball.rot[1] / 32768) * Math.PI,
+        (data.ball.rot[0] / 32768) * Math.PI
       )
     );
+    camera.update(
+      graphics,
+      new THREE.Vector3(
+        data.camera.loc[0],
+        data.camera.loc[2],
+        data.camera.loc[1]
+      ),
+      new THREE.Vector3(
+        (data.camera.rot[2] / 32768) * Math.PI,
+        (data.camera.rot[1] / 32768) * Math.PI,
+        (data.camera.rot[0] / 32768) * Math.PI
+      )
+    );
+  } else {
+    game.SetControls(gameControls);
+    game.Step(2);
+    const state = game.GetState();
+    carModel.update(
+      new THREE.Vector3(...state.carPos),
+      new THREE.Vector3(...state.carAng),
+      carOffset
+    );
+    for (let i = 0; i < 4; i++) {
+      wheelShapes[i].update(
+        new THREE.Vector3(...state.wheelPos[i]),
+        new THREE.Vector3(
+          state.wheelAng[i][0] + Math.PI / 2,
+          state.wheelAng[i][1],
+          state.wheelAng[i][2]
+        )
+      );
+    }
+    ballModel.update(
+      new THREE.Vector3(...state.ballPos),
+      new THREE.Vector3(...state.ballAng)
+    );
+    camera.updateCamera(graphics, state);
   }
-  ballModel.update(
-    new THREE.Vector3(...state.ballPos),
-    new THREE.Vector3(...state.ballAng)
-  );
-  camera.updateCamera(graphics, state);
   graphics.render();
   requestAnimationFrame(animate);
 }

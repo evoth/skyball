@@ -214,7 +214,7 @@ Module['FS_createPath']("/", "models", true, true);
     }
 
     }
-    loadPackage({"files": [{"filename": "/collision_meshes/soccar/mesh_0.cmf", "start": 0, "end": 16364}, {"filename": "/collision_meshes/soccar/mesh_1.cmf", "start": 16364, "end": 32728}, {"filename": "/collision_meshes/soccar/mesh_10.cmf", "start": 32728, "end": 35208}, {"filename": "/collision_meshes/soccar/mesh_11.cmf", "start": 35208, "end": 37688}, {"filename": "/collision_meshes/soccar/mesh_12.cmf", "start": 37688, "end": 40168}, {"filename": "/collision_meshes/soccar/mesh_13.cmf", "start": 40168, "end": 42648}, {"filename": "/collision_meshes/soccar/mesh_14.cmf", "start": 42648, "end": 43064}, {"filename": "/collision_meshes/soccar/mesh_15.cmf", "start": 43064, "end": 43480}, {"filename": "/collision_meshes/soccar/mesh_2.cmf", "start": 43480, "end": 59844}, {"filename": "/collision_meshes/soccar/mesh_3.cmf", "start": 59844, "end": 76208}, {"filename": "/collision_meshes/soccar/mesh_4.cmf", "start": 76208, "end": 94444}, {"filename": "/collision_meshes/soccar/mesh_5.cmf", "start": 94444, "end": 112680}, {"filename": "/collision_meshes/soccar/mesh_6.cmf", "start": 112680, "end": 130916}, {"filename": "/collision_meshes/soccar/mesh_7.cmf", "start": 130916, "end": 149152}, {"filename": "/collision_meshes/soccar/mesh_8.cmf", "start": 149152, "end": 149568}, {"filename": "/collision_meshes/soccar/mesh_9.cmf", "start": 149568, "end": 149984}, {"filename": "/models/ball.glb", "start": 149984, "end": 302348}, {"filename": "/models/field.glb", "start": 302348, "end": 4665500}], "remote_package_size": 4665500});
+    loadPackage({"files": [{"filename": "/collision_meshes/soccar/mesh_0.cmf", "start": 0, "end": 16364}, {"filename": "/collision_meshes/soccar/mesh_1.cmf", "start": 16364, "end": 32728}, {"filename": "/collision_meshes/soccar/mesh_10.cmf", "start": 32728, "end": 35208}, {"filename": "/collision_meshes/soccar/mesh_11.cmf", "start": 35208, "end": 37688}, {"filename": "/collision_meshes/soccar/mesh_12.cmf", "start": 37688, "end": 40168}, {"filename": "/collision_meshes/soccar/mesh_13.cmf", "start": 40168, "end": 42648}, {"filename": "/collision_meshes/soccar/mesh_14.cmf", "start": 42648, "end": 43064}, {"filename": "/collision_meshes/soccar/mesh_15.cmf", "start": 43064, "end": 43480}, {"filename": "/collision_meshes/soccar/mesh_2.cmf", "start": 43480, "end": 59844}, {"filename": "/collision_meshes/soccar/mesh_3.cmf", "start": 59844, "end": 76208}, {"filename": "/collision_meshes/soccar/mesh_4.cmf", "start": 76208, "end": 94444}, {"filename": "/collision_meshes/soccar/mesh_5.cmf", "start": 94444, "end": 112680}, {"filename": "/collision_meshes/soccar/mesh_6.cmf", "start": 112680, "end": 130916}, {"filename": "/collision_meshes/soccar/mesh_7.cmf", "start": 130916, "end": 149152}, {"filename": "/collision_meshes/soccar/mesh_8.cmf", "start": 149152, "end": 149568}, {"filename": "/collision_meshes/soccar/mesh_9.cmf", "start": 149568, "end": 149984}, {"filename": "/models/ball.glb", "start": 149984, "end": 302348}, {"filename": "/models/car.glb", "start": 302348, "end": 24226176}, {"filename": "/models/field.glb", "start": 24226176, "end": 28589328}], "remote_package_size": 28589328});
 
   })();
 
@@ -3840,27 +3840,10 @@ function dbg(text) {
   }
   }
 
-  
   function stringToUTF8(str, outPtr, maxBytesToWrite) {
       assert(typeof maxBytesToWrite == 'number', 'stringToUTF8(str, outPtr, maxBytesToWrite) is missing the third parameter that specifies the length of the output buffer!');
       return stringToUTF8Array(str, HEAPU8,outPtr, maxBytesToWrite);
     }
-  
-  function ___syscall_getcwd(buf, size) {
-  try {
-  
-      if (size === 0) return -28;
-      var cwd = FS.cwd();
-      var cwdLengthInBytes = lengthBytesUTF8(cwd) + 1;
-      if (size < cwdLengthInBytes) return -68;
-      stringToUTF8(cwd, buf, size);
-      return cwdLengthInBytes;
-    } catch (e) {
-    if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
-    return -e.errno;
-  }
-  }
-
   
   function ___syscall_getdents64(fd, dirp, count) {
   try {
@@ -6344,33 +6327,6 @@ function dbg(text) {
       return 0;
     }
 
-  
-  function _proc_exit(code) {
-      EXITSTATUS = code;
-      if (!keepRuntimeAlive()) {
-        if (Module['onExit']) Module['onExit'](code);
-        ABORT = true;
-      }
-      quit_(code, new ExitStatus(code));
-    }
-  /** @suppress {duplicate } */
-  /** @param {boolean|number=} implicit */
-  function exitJS(status, implicit) {
-      EXITSTATUS = status;
-  
-      checkUnflushedContent();
-  
-      // if exit() was called explicitly, warn the user if the runtime isn't actually being shut down
-      if (keepRuntimeAlive() && !implicit) {
-        var msg = `program exited (with status: ${status}), but keepRuntimeAlive() is set (counter=${runtimeKeepaliveCounter}) due to an async operation, so halting execution but not exiting the runtime or preventing further async execution (you can use emscripten_force_exit, if you want to force a true shutdown)`;
-        readyPromiseReject(msg);
-        err(msg);
-      }
-  
-      _proc_exit(status);
-    }
-  var _exit = exitJS;
-
   function _fd_close(fd) {
   try {
   
@@ -7071,7 +7027,6 @@ var wasmImports = {
   "__cxa_throw": ___cxa_throw,
   "__syscall_fcntl64": ___syscall_fcntl64,
   "__syscall_fstat64": ___syscall_fstat64,
-  "__syscall_getcwd": ___syscall_getcwd,
   "__syscall_getdents64": ___syscall_getdents64,
   "__syscall_ioctl": ___syscall_ioctl,
   "__syscall_lstat64": ___syscall_lstat64,
@@ -7107,7 +7062,6 @@ var wasmImports = {
   "emscripten_resize_heap": _emscripten_resize_heap,
   "environ_get": _environ_get,
   "environ_sizes_get": _environ_sizes_get,
-  "exit": _exit,
   "fd_close": _fd_close,
   "fd_read": _fd_read,
   "fd_seek": _fd_seek,
@@ -7176,6 +7130,7 @@ Module["FS_createDevice"] = FS.createDevice;
 Module["FS_unlink"] = FS.unlink;
 Module["FS_createPreloadedFile"] = FS.createPreloadedFile;
 var missingLibrarySymbols = [
+  'exitJS',
   'ydayFromDate',
   'inetPton4',
   'inetNtop4',
@@ -7362,7 +7317,6 @@ var unexportedSymbols = [
   'checkStackCookie',
   'ptrToString',
   'zeroMemory',
-  'exitJS',
   'getHeapMax',
   'emscripten_realloc_buffer',
   'ENV',

@@ -62,4 +62,19 @@ export default class Camera {
       );
     }
   }
+
+  update(
+    graphics: Graphics,
+    pos: THREE.Vector3,
+    ang: THREE.Vector3 = new THREE.Vector3()
+  ) {
+    const rotation = new THREE.Euler(ang.x, -ang.y - Math.PI / 2, ang.z, "YZX");
+    const position = new THREE.Vector3();
+    position.applyEuler(rotation);
+    position.add(pos);
+    graphics.camera.position.copy(position);
+    graphics.camera.rotation.x = rotation.z;
+    graphics.camera.rotation.y = rotation.y;
+    graphics.camera.rotation.z = rotation.x;
+  }
 }
