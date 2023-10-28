@@ -1,10 +1,16 @@
 export default class Socket {
   isConnected: boolean = false;
   ws: WebSocket;
-  url: string = "ws://localhost:7777";
+  url: string;
   data: any;
 
   connect() {
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    let host = urlParams.get("host");
+    host = host || "localhost";
+    this.url = `ws://${host}:7777`;
+
     let that = this;
     if ("WebSocket" in window) {
       this.ws = new WebSocket(this.url);

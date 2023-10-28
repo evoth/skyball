@@ -33,20 +33,11 @@ const carConfig = game.GetCarConfig();
 const carModel = new Model(graphics.scene, "assets/models/car.glb");
 const carOffset = new THREE.Vector3(...carConfig.hitboxPosOffset);
 
-const wheelShapes: Cylinder[] = [];
-for (let i = 0; i < 4; i++) {
-  const radius =
-    i < 2
-      ? carConfig.frontWheels.wheelRadius
-      : carConfig.backWheels.wheelRadius;
-  wheelShapes.push(new Cylinder(graphics.scene, radius, 10));
-}
-
 const ballModel = new Model(graphics.scene, "assets/models/ball.glb");
 
 let gameControls = game.GetControls();
 
-const camera = new Camera(350, 110, -4, 100);
+const camera = new Camera(350, 110, -4, 110, 100);
 
 const controls = new Controls(
   {
@@ -120,36 +111,34 @@ function animate() {
   }
   if (socket.isConnected && socket.data) {
     let data = socket.data.data[0];
-    carModel.update(
-      new THREE.Vector3(data.car.loc[0], data.car.loc[2], data.car.loc[1]),
-      new THREE.Vector3(
+    const state = {
+      carPos: [data.car.loc[0], data.car.loc[2], data.car.loc[1]],
+      carAng: [
         (data.car.rot[2] / 32768) * Math.PI,
         (data.car.rot[1] / 32768) * Math.PI,
-        (data.car.rot[0] / 32768) * Math.PI
-      ),
+        (data.car.rot[0] / 32768) * Math.PI,
+      ],
+      ballPos: [data.ball.loc[0], data.ball.loc[2], data.ball.loc[1]],
+      ballAng: [
+        (data.ball.rot[2] / 32768) * Math.PI,
+        (data.ball.rot[1] / 32768) * Math.PI,
+        (data.ball.rot[0] / 32768) * Math.PI,
+      ],
+    };
+    carModel.update(
+      new THREE.Vector3(...state.carPos),
+      new THREE.Vector3(...state.carAng),
       carOffset
     );
     ballModel.update(
-      new THREE.Vector3(data.ball.loc[0], data.ball.loc[2], data.ball.loc[1]),
-      new THREE.Vector3(
-        (data.ball.rot[2] / 32768) * Math.PI,
-        (data.ball.rot[1] / 32768) * Math.PI,
-        (data.ball.rot[0] / 32768) * Math.PI
-      )
+      new THREE.Vector3(...state.ballPos),
+      new THREE.Vector3(...state.ballAng)
     );
-    camera.update(
-      graphics,
-      new THREE.Vector3(
-        data.camera.loc[0],
-        data.camera.loc[2],
-        data.camera.loc[1]
-      ),
-      new THREE.Vector3(
-        (data.camera.rot[2] / 32768) * Math.PI,
-        (data.camera.rot[1] / 32768) * Math.PI,
-        (data.camera.rot[0] / 32768) * Math.PI
-      )
-    );
+    camera.cameraDistance = socket.data.settings.distance;
+    camera.cameraHeight = socket.data.settings.height;
+    camera.cameraAngle = socket.data.settings.pitch;
+    camera.cameraFOV = socket.data.settings.fov;
+    camera.updateCamera(graphics, state);
   } else {
     game.SetControls(gameControls);
     game.Step(2);
@@ -159,16 +148,6 @@ function animate() {
       new THREE.Vector3(...state.carAng),
       carOffset
     );
-    for (let i = 0; i < 4; i++) {
-      wheelShapes[i].update(
-        new THREE.Vector3(...state.wheelPos[i]),
-        new THREE.Vector3(
-          state.wheelAng[i][0] + Math.PI / 2,
-          state.wheelAng[i][1],
-          state.wheelAng[i][2]
-        )
-      );
-    }
     ballModel.update(
       new THREE.Vector3(...state.ballPos),
       new THREE.Vector3(...state.ballAng)
