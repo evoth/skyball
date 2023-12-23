@@ -1,6 +1,6 @@
 OUTPUT_PREFIX = RocketSim
 SRC_OUTPUT_DIR = src
-DIST_OUTPUT_DIR = dist
+STATIC_OUTPUT_DIR = public
 
 COMPILE_DIR = RocketSim
 ASSETS_DIR = assets\RocketSim
@@ -8,7 +8,7 @@ EMBIND_INCLUDE_DIR = ..\emscripten-main\emscripten-main\system\include\emscripte
 
 CC = emcc
 CFLAGS = -std=c++20
-EMFLAGS = -lembind -sMODULARIZE --preload-file $(ASSETS_DIR)@/ -sALLOW_MEMORY_GROWTH -sWASM_BIGINT -I$(EMBIND_INCLUDE_DIR)
+EMFLAGS = -lembind -sEXPORT_ES6 -sMODULARIZE --preload-file $(ASSETS_DIR)@/ -sALLOW_MEMORY_GROWTH -sWASM_BIGINT -I$(EMBIND_INCLUDE_DIR)
 
 MV = move /y
 
@@ -17,5 +17,4 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 
 $(OUTPUT_PREFIX):
 	$(CC) $(call rwildcard,$(COMPILE_DIR)/,*.cpp) $(CFLAGS) -o $(SRC_OUTPUT_DIR)\$(OUTPUT_PREFIX).js $(EMFLAGS)
-	$(MV) $(SRC_OUTPUT_DIR)\$(OUTPUT_PREFIX).data $(DIST_OUTPUT_DIR)\$(OUTPUT_PREFIX).data
-	$(MV) $(SRC_OUTPUT_DIR)\$(OUTPUT_PREFIX).wasm $(DIST_OUTPUT_DIR)\$(OUTPUT_PREFIX).wasm
+	$(MV) $(SRC_OUTPUT_DIR)\$(OUTPUT_PREFIX).data $(STATIC_OUTPUT_DIR)\$(OUTPUT_PREFIX).data
