@@ -1,5 +1,5 @@
 OUTPUT_PREFIX = RocketSim
-SRC_OUTPUT_DIR = src
+SRC_OUTPUT_DIR = src\external
 STATIC_OUTPUT_DIR = public
 
 COMPILE_DIR = RocketSim

@@ -1,10 +1,25 @@
 <script lang="ts">
-  import factory from "./RocketSim.js";
+  import { onMount } from "svelte";
+  import Game from "./game/game";
 
-  const init = async () => {
-    const RocketSim = await factory();
-    console.log(RocketSim.BALL_COLLISION_RADIUS_SOCCAR);
-  };
+  let container: HTMLElement;
+  let game: Game;
 
-  init();
+  onMount(async () => {
+    game = await Game.init(container);
+  });
 </script>
+
+<div id="graphics" bind:this={container}></div>
+{#if !game}
+  <p>Loading...</p>
+{/if}
+
+<style>
+  #graphics {
+    position: fixed;
+    left: 0px;
+    top: 0px;
+    z-index: -1;
+  }
+</style>
