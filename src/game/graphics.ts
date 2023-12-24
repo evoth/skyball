@@ -15,7 +15,6 @@ export class Shape {
     ang: THREE.Vector3 = new THREE.Vector3(),
     offset: THREE.Vector3 = new THREE.Vector3()
   ) {
-    if (!this.mesh) return;
     const rotation = new THREE.Euler(ang.x, -ang.y, ang.z, "YZX");
     const position = new THREE.Vector3();
     position.copy(offset);
