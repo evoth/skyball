@@ -1,14 +1,52 @@
 // TODO: Add logic for multiple controllers
 
 export default class Controls {
-  bindings: Bindings;
+  bindings: GameBindings;
   gamepad?: Gamepad;
-  state?: ControlsState;
   keys: { [index: string]: boolean } = {};
+  gameInput: InputManager<GameInputState>;
 
-  constructor(bindings: Bindings) {
+  constructor(bindings: GameBindings) {
     this.bindings = bindings;
 
+    this.gameInput = new InputManager<GameInputState>(
+      {
+        throttle: new CombinedInput(this.bindings.forward, this.bindings.back),
+        steer: new CombinedInput(this.bindings.right, this.bindings.left),
+        pitch: new CombinedInput(
+          this.bindings.pitchBack,
+          this.bindings.pitchForward
+        ),
+        yaw: new CombinedInput(this.bindings.yawRight, this.bindings.yawLeft),
+        roll: new CombinedInput(
+          this.bindings.rollRight,
+          this.bindings.rollLeft
+        ),
+        roll2: new CombinedInput(this.bindings.roll),
+
+        boost: new CombinedInput(this.bindings.boost),
+        jump: new CombinedInput(this.bindings.jump),
+        handbrake: new CombinedInput(this.bindings.handbrake),
+      },
+      (values) => {
+        const state: GameInputState = {
+          ...values,
+          boost: Boolean(values.boost),
+          jump: Boolean(values.jump),
+          handbrake: Boolean(values.handbrake),
+        };
+        if (state.roll2 != 0) {
+          state.roll = state.roll2 * state.yaw;
+          state.yaw *= 1 - state.roll2;
+        }
+        return state;
+      }
+    );
+
+    this.windowEvents();
+  }
+
+  windowEvents() {
     const that = this;
 
     function keyup(e: KeyboardEvent) {
@@ -49,68 +87,63 @@ export default class Controls {
     this.gamepad = undefined;
   }
 
-  updateState() {
-    const that = this;
-
-    function combinedValue(
-      positiveInputs: Input[] = [],
-      negativeInputs: Input[] = []
-    ): number {
-      let value = 0;
-      for (const input of positiveInputs) {
-        value += input.getStatus(that).value;
-      }
-      for (const input of negativeInputs) {
-        value -= input.getStatus(that).value;
-      }
-      value = Math.max(-1, Math.min(1, value));
-      return value;
+  getState(time: number): [gameInputState: GameInputState] {
+    if (!("ongamepadconnected" in window)) {
+      this.scanGamepads();
     }
+    return [this.gameInput.getState(this, time)];
+  }
+}
 
-    const throttle = combinedValue(this.bindings.forward, this.bindings.back);
-    const steer = combinedValue(this.bindings.right, this.bindings.left);
-    const pitch = combinedValue(
-      this.bindings.pitchBack,
-      this.bindings.pitchForward
-    );
-    let yaw = combinedValue(this.bindings.yawRight, this.bindings.yawLeft);
-    let roll = combinedValue(this.bindings.rollRight, this.bindings.rollLeft);
-    let roll2 = combinedValue(this.bindings.roll);
-    if (roll2 != 0) {
-      roll = roll2 * yaw;
-      yaw *= 1 - roll2;
+type Mapped<T, U> = {
+  [Key in keyof T]: U;
+};
+
+class InputManager<T extends { [index: string]: number | boolean }> {
+  inputs: Mapped<T, Input>;
+  transform: (
+    values: Mapped<T, number>,
+    oldValues: Mapped<T, number | undefined>
+  ) => T;
+
+  constructor(
+    inputs: Mapped<T, Input>,
+    transform: (
+      state: Mapped<T, number>,
+      oldValues: Mapped<T, number | undefined>
+    ) => T
+  ) {
+    this.inputs = inputs;
+    this.transform = transform;
+  }
+
+  getState(controls: Controls, time: number): T {
+    const values = {} as Mapped<T, number>;
+    const oldValues = {} as Mapped<T, number | undefined>;
+    for (const key in this.inputs) {
+      [values[key], oldValues[key]] = this.inputs[key].getStatus(
+        controls,
+        time
+      );
     }
-
-    const boost = Boolean(combinedValue(this.bindings.boost));
-    const jump = Boolean(combinedValue(this.bindings.jump));
-    const handbrake = Boolean(combinedValue(this.bindings.handbrake));
-
-    this.state = {
-      throttle,
-      steer,
-      pitch,
-      yaw,
-      roll,
-      boost,
-      jump,
-      handbrake,
-    };
+    return this.transform(values, oldValues);
   }
 }
 
 // Range for numbers is -1 to 1
-type ControlsState = {
+type GameInputState = {
   throttle: number;
   steer: number;
   pitch: number;
   yaw: number;
   roll: number;
+  roll2: number;
   boost: boolean;
   jump: boolean;
   handbrake: boolean;
 };
 
-type Bindings = {
+type GameBindings = {
   forward?: Input[];
   back?: Input[];
   left?: Input[];
@@ -125,26 +158,50 @@ type Bindings = {
   rollLeft?: Input[];
   rollRight?: Input[];
   roll?: Input[];
-  ballcam?: Input[];
-  reset?: Input[];
-};
-
-type Status = {
-  value: number;
-  changed: boolean;
 };
 
 abstract class Input {
+  value?: number;
   oldValue?: number;
+  time?: number;
+  oldTime?: number;
 
-  abstract getValue(controls: Controls): number;
+  abstract getValue(controls: Controls, time: number): number;
 
-  // TODO: Fix any problems arising from calling this >1 time per frame
-  getStatus(controls: Controls): Status {
-    const value = this.getValue(controls);
-    const ret = { value: value, changed: value !== this.oldValue };
-    this.oldValue = value;
-    return ret;
+  getStatus(
+    controls: Controls,
+    time: number
+  ): [value: number, oldValue?: number] {
+    if (this.value === undefined || time != this.time) {
+      this.oldValue = this.value;
+      this.value = this.getValue(controls, time);
+      this.oldTime = this.time;
+      this.time = time;
+    }
+    return [this.value, this.oldValue];
+  }
+}
+
+class CombinedInput extends Input {
+  positiveInputs: Input[];
+  negativeInputs: Input[];
+
+  constructor(positiveInputs: Input[] = [], negativeInputs: Input[] = []) {
+    super();
+    this.positiveInputs = positiveInputs;
+    this.negativeInputs = negativeInputs;
+  }
+
+  getValue(controls: Controls, time: number): number {
+    let value = 0;
+    for (const input of this.positiveInputs) {
+      value += input.getStatus(controls, time)[0];
+    }
+    for (const input of this.negativeInputs) {
+      value -= input.getStatus(controls, time)[0];
+    }
+    value = Math.max(-1, Math.min(1, value));
+    return value;
   }
 }
 
@@ -159,7 +216,7 @@ export class ButtonInput extends Input {
   getValue(controls: Controls) {
     if (!controls.gamepad) return 0;
     const button = controls.gamepad.buttons[this.index];
-    return Math.max(button.value, Number(button.pressed));
+    return button.value != 0 ? button.value : Number(button.pressed);
   }
 }
 
@@ -186,9 +243,7 @@ export class KeyInput extends Input {
   }
 
   getValue(controls: Controls) {
-    if (!(this.index in controls.keys)) {
-      return 0;
-    }
+    if (!(this.index in controls.keys)) return 0;
     return Number(controls.keys[this.index]);
   }
 }

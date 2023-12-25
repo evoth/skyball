@@ -41,12 +41,9 @@ export default class Game {
     return new Game(container, await Simulation.init());
   }
 
-  loop() {
-    if (!("ongamepadconnected" in window)) {
-      this.controls.scanGamepads();
-    }
-    this.controls.updateState();
+  loop(time: number = 0) {
+    const [gameInputState] = this.controls.getState(time);
     this.graphics.render();
-    requestAnimationFrame(() => this.loop());
+    requestAnimationFrame((time) => this.loop(time));
   }
 }
