@@ -2,7 +2,7 @@
 
 export default class Controls {
   bindings: GameBindings;
-  gamepad?: Gamepad;
+  gamepads: Gamepad[] = [];
   keys: { [index: string]: boolean } = {};
   gameInput: InputManager<GameInputState>;
 
@@ -40,7 +40,9 @@ export default class Controls {
           state.yaw *= 1 - state.roll2;
         }
         return state;
-      }
+      },
+      this.gamepads,
+      this.keys
     );
 
     this.windowEvents();
@@ -66,10 +68,10 @@ export default class Controls {
     window.addEventListener("keyup", keyup);
 
     function connecthandler(e: GamepadEvent) {
-      that.gamepad = e.gamepad;
+      that.gamepads[e.gamepad.index] = e.gamepad;
     }
     function disconnecthandler(e: GamepadEvent) {
-      that.gamepad = undefined;
+      delete that.gamepads[e.gamepad.index];
     }
 
     window.addEventListener("gamepadconnected", connecthandler);
@@ -77,23 +79,28 @@ export default class Controls {
   }
 
   scanGamepads() {
+    this.gamepads.splice(0, this.gamepads.length);
     const gamepads = navigator.getGamepads();
     for (const gamepad of gamepads) {
       if (gamepad) {
-        this.gamepad = gamepad;
+        this.gamepads[gamepad.index] = gamepad;
         return;
       }
     }
-    this.gamepad = undefined;
   }
 
   getState(time: number): [gameInputState: GameInputState] {
     if (!("ongamepadconnected" in window)) {
       this.scanGamepads();
     }
-    return [this.gameInput.getState(this, time)];
+    return [this.gameInput.getState(time)];
   }
 }
+
+type InputDevices = {
+  gamepad?: Gamepad;
+  keys: { [index: string]: boolean };
+};
 
 type Mapped<T, U> = {
   [Key in keyof T]: U;
@@ -105,26 +112,42 @@ class InputManager<T extends { [index: string]: number | boolean }> {
     values: Mapped<T, number>,
     oldValues: Mapped<T, number | undefined>
   ) => T;
+  gamepads: Gamepad[];
+  keys: { [index: string]: boolean };
+  gamepadIndex?: number;
+  useKeyboard: boolean;
 
   constructor(
     inputs: Mapped<T, Input>,
     transform: (
       state: Mapped<T, number>,
       oldValues: Mapped<T, number | undefined>
-    ) => T
+    ) => T,
+    gamepads: Gamepad[],
+    keys: { [index: string]: boolean },
+    gamepadIndex: number = 0,
+    useKeyboard: boolean = true
   ) {
     this.inputs = inputs;
     this.transform = transform;
+    this.gamepads = gamepads;
+    this.keys = keys;
+    this.gamepadIndex = gamepadIndex;
+    this.useKeyboard = useKeyboard;
   }
 
-  getState(controls: Controls, time: number): T {
+  getState(time: number): T {
+    const devices = {
+      gamepad:
+        this.gamepadIndex === undefined
+          ? undefined
+          : this.gamepads[this.gamepadIndex],
+      keys: this.useKeyboard ? this.keys : {},
+    };
     const values = {} as Mapped<T, number>;
     const oldValues = {} as Mapped<T, number | undefined>;
     for (const key in this.inputs) {
-      [values[key], oldValues[key]] = this.inputs[key].getStatus(
-        controls,
-        time
-      );
+      [values[key], oldValues[key]] = this.inputs[key].getStatus(devices, time);
     }
     return this.transform(values, oldValues);
   }
@@ -166,15 +189,15 @@ abstract class Input {
   time?: number;
   oldTime?: number;
 
-  abstract getValue(controls: Controls, time: number): number;
+  abstract getValue(devices: InputDevices, time: number): number;
 
   getStatus(
-    controls: Controls,
+    devices: InputDevices,
     time: number
   ): [value: number, oldValue?: number] {
     if (this.value === undefined || time != this.time) {
       this.oldValue = this.value;
-      this.value = this.getValue(controls, time);
+      this.value = this.getValue(devices, time);
       this.oldTime = this.time;
       this.time = time;
     }
@@ -192,13 +215,13 @@ class CombinedInput extends Input {
     this.negativeInputs = negativeInputs;
   }
 
-  getValue(controls: Controls, time: number): number {
+  getValue(devices: InputDevices, time: number): number {
     let value = 0;
     for (const input of this.positiveInputs) {
-      value += input.getStatus(controls, time)[0];
+      value += input.getStatus(devices, time)[0];
     }
     for (const input of this.negativeInputs) {
-      value -= input.getStatus(controls, time)[0];
+      value -= input.getStatus(devices, time)[0];
     }
     value = Math.max(-1, Math.min(1, value));
     return value;
@@ -213,9 +236,9 @@ export class ButtonInput extends Input {
     this.index = index;
   }
 
-  getValue(controls: Controls) {
-    if (!controls.gamepad) return 0;
-    const button = controls.gamepad.buttons[this.index];
+  getValue(devices: InputDevices) {
+    if (!devices.gamepad) return 0;
+    const button = devices.gamepad.buttons[this.index];
     return button.value != 0 ? button.value : Number(button.pressed);
   }
 }
@@ -228,9 +251,9 @@ export class AxisInput extends Input {
     this.index = index;
   }
 
-  getValue(controls: Controls) {
-    if (!controls.gamepad) return 0;
-    return controls.gamepad.axes[this.index];
+  getValue(devices: InputDevices) {
+    if (!devices.gamepad) return 0;
+    return devices.gamepad.axes[this.index];
   }
 }
 
@@ -242,9 +265,9 @@ export class KeyInput extends Input {
     this.index = index;
   }
 
-  getValue(controls: Controls) {
-    if (!(this.index in controls.keys)) return 0;
-    return Number(controls.keys[this.index]);
+  getValue(devices: InputDevices) {
+    if (!(this.index in devices.keys)) return 0;
+    return Number(devices.keys[this.index]);
   }
 }
 
